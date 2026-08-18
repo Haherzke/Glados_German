@@ -1,103 +1,114 @@
 <a href="https://trendshift.io/repositories/9828" target="_blank"><img src="https://trendshift.io/api/badge/repositories/9828" alt="dnhkng%2FGlaDOS | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 
-# GLaDOS Personality Core
-This is a project dedicated to building a real-life version of GLaDOS!
+# GLaDOS Persönlichkeitskern
 
-NEW: If you want to chat or join the community, [Join our discord!](https://discord.com/invite/ERTDKwpjNB) If you want to support, [sponsor the project here!](https://ko-fi.com/dnhkng)
+Ein lokales Sprachassistenten-Projekt, das GLaDOS als Persönlichkeit mit eigenen KI-Modellen realisiert – keine Cloud-Abhängigkeiten, vollständig offline.
 
-https://github.com/user-attachments/assets/c22049e4-7fba-4e84-8667-2c6657a656a0
+**Community:** [Discord beitreten](https://discord.com/invite/ERTDKwpjNB) | **Support:** [Ko-fi](https://ko-fi.com/dnhkng)
 
-## Update 3-1-2025 *Got GLaDOS running on an 8Gb SBC!*
+## Eigenschaften
 
-https://github.com/user-attachments/assets/99e599bb-4701-438a-a311-8e6cd595796c
+- **Spracherkennung (ASR):** Whisper, Parakeet-TDT, oder CTC – lokale ONNX-Modelle
+- **Text-zu-Sprache (TTS):** Spezielle GLaDOS-Stimme oder Kokoro-Stimmen – ONNX-basiert
+- **LLM-Integration:** Kompatibel mit OpenAI API, Ollama oder anderen lokalen LLM-Servern
+- **Sprachaktivitätserkennung:** Silero VAD für automatische Spracherkennung
+- **Niedrige Latenz:** Streaming-Architektur, < 600ms Antwortzeit
+- **Hochgradig konfigurierbar:** Vollständig anpassbare Persönlichkeit via YAML
+- **Plattformübergreifend:** Windows, macOS, Linux – inkl. SBCs (8GB RAM)
 
-This is really tricky, so only for hardcore geeks! Checkout the 'rock5b' branch, and my OpenAI API for the [RK3588 NPU system](https://github.com/dnhkng/RKLLM-Gradio)
-Don't expect support for this, it's in active development, and requires lots of messing about in armbian linux etc.
+## Schnellstart
 
-## Goals
-*This is a hardware and software project that will create an aware, interactive, and embodied GLaDOS.*
+### Voraussetzungen
 
-This will entail:
-- [x] Train GLaDOS voice generator
-- [x] Generate a prompt that leads to a realistic "Personality Core"
-- [ ] Generate a medium- and long-term memory for GLaDOS (Probably a custom vector DB in a simpy Numpy array!) 
-- [ ] Give GLaDOS vision via a VLM (either a full VLM for everything, or a 'vision module' using a tiny VLM the GLaDOS can function call!)
-- [ ] Create 3D-printable parts
-- [ ] Design the animatronics system
+- **Python 3.12+**
+- **LLM-Server:** Ollama oder OpenAI API (lokale oder Cloud)
+- Optional: **NVIDIA CUDA** oder **ROCm** für GPU-Beschleunigung
 
+### Installation & Start
 
+```bash
+# Repository klonen
+git clone https://github.com/dnhkng/GLaDOS.git
+cd GLaDOS
 
-## Software Architecture
-The initial goals are to develop a low-latency platform, where GLaDOS can respond to voice interactions within 600ms.
+# Installation (lädt Modelle herunter)
+python scripts/install.py
 
-To do this, the system constantly records data to a circular buffer, waiting for [voice to be detected](https://github.com/snakers4/silero-vad). When it's determined that the voice has stopped (including detection of normal pauses), it will be [transcribed quickly](https://github.com/huggingface/distil-whisper). This is then passed to streaming [local Large Language Model](https://github.com/ggerganov/llama.cpp), where the streamed text is broken by sentence, and passed to a [text-to-speech system](https://github.com/rhasspy/piper). This means further sentences can be generated while the current is playing, reducing latency substantially.
+# LLM starten (mit Ollama)
+ollama pull deepseek-chat
 
-### Subgoals
- - The other aim of the project is to minimize dependencies, so this can run on constrained hardware. That means no PyTorch or other large packages.
- - As I want to fully understand the system, I have removed a large amount of redirection: which means extracting and rewriting code.
+# GLaDOS starten
+uv run glados          # Sprachinteraktive Version
+uv run glados tui      # Text UI (experimentell)
+uv run glados say "Der Kuchen ist real"  # Text aussprechen
+```
 
-## Hardware System
-This will be based on servo- and stepper-motors. 3D printable STL will be provided to create GlaDOS's body, and she will be given a set of animations to express herself. The vision system will allow her to track and turn toward people and things of interest.
+### API-Server (optional)
 
-# Installation Instruction
-Try this simplified process, but be aware it's still in the experimental stage!  For all operating systems, you'll first need to install Ollama to run the LLM.
+```bash
+# OpenAI API-kompatible TTS-Schnittstelle
+uv run glados api
+# POST http://localhost:8000/v1/audio/speech
+```
 
-## Install Drivers if necessary!
-If you are an Nvidia GPU, make sure you install the necessary drivers and CUDA which you can find here: [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit)
+## Architektur
 
-If you are using another accelerator (ROCm, DirectML etc.), after following the instructions below for you platform, follow up with installing the  [best onnxruntime version](https://onnxruntime.ai/docs/install/) for your system.
+**Audio-Pipeline:**
+1. **Continuous Recording** → Zirkulärer Buffer mit Silero VAD
+2. **Speech Detection** → Automatische Stummschaltung und Sprachende-Erkennung
+3. **Transcription** → ASR-Modell (Whisper/Parakeet) in ONNX
+4. **LLM Processing** → Streaming-Response vom LLM-Server
+5. **TTS Synthesis** → Satzweise Generierung während der Ausgabe
+6. **Audio Playback** → Direktes Streaming an Audio-System
 
- ___If you don't install the appropriate drivers, this system will still work, but the latency will be much greater!___
+**Komponenten:**
+- `core/engine.py` – Haupt-Orchestrator
+- `ASR/` – Spracherkennung (Whisper, Parakeet, CTC)
+- `TTS/` – Text-zu-Sprache (GLaDOS, Kokoro)
+- `audio_io/` – Audio I/O abstraction (sounddevice)
+- `api/` – OpenAI-kompatible REST-API
+- `core/llm_processor.py` – LLM-Streaming
 
-## Set up a local LLM server:
-1. Download and install [Ollama](https://github.com/ollama/ollama) for your operating system.
-2. Once installed, download a small 3B model for testing - at a terminal or command prompt use: `ollama pull llama3.2`
+## Konfiguration
 
-Note: You can use any OpenAI or Ollama compatible server, local or cloud based. Just edit the glados_config.yaml and update the completion_url, model and the api_key if necessary.
+Hauptdatei: **`configs/glados_config.yaml`**
 
-## Operating specific instruction
-#### Windows Installation Process
-1. Open the Microsoft Store, search for `python` and install Python 3.12
+```yaml
+Glados:
+  llm_model: "deepseek-chat"
+  completion_url: "https://api.deepseek.com/chat/completions"  # oder lokal: http://localhost:11434/api/chat
+  api_key: "sk-xxx..."
+  
+  asr_engine: "whisper"        # "whisper", "tdt", "ctc"
+  asr_model_path: "small"      # tiny, base, small, medium, large
+  
+  voice: "glados"              # "glados" oder Kokoro-Stimme
+  interruptible: true          # Nutzer kann GLaDOS unterbrechen
+  
+  personality_preprompt:       # Persönlichkeits-Prompt (GLaDOS-Stil)
+    - system: "Du bist GLaDOS..."
+```
 
-#### macOS Installation Process
-This is still experimental. Any issues can be addressed in the Discord server. If you create an issue related to this, you will be referred to the Discord server.  Note: I was getting Segfaults!  Please leave feedback!
+## Projektstruktur
 
-#### Linux Installation Process
-Install the PortAudio library, if you don't yet have it installed:
+```
+src/glados/
+├── core/           # Engine, LLM-Processor
+├── ASR/            # Spracherkennung (Whisper, Parakeet, CTC)
+├── TTS/            # Text-zu-Sprache
+├── audio_io/       # Audio-Systemintegration
+├── api/            # REST-API (Optional)
+└── utils/          # Helfer & Ressourcen
+```
 
-    sudo apt update
-    sudo apt install libportaudio2
+## Roadmap
 
-## Installing GLaDOS
-1. Download this repository, either:
-   1. Download and unzip this repository somewhere in your home folder, or
-
-   2. At a terminal, git clone this repository using:
-
-            git clone https://github.com/dnhkng/GLaDOS.git
-
-2. In a terminal, go to the repository folder and run these commands:
-   
-   Mac/Linux:
-
-        python scripts/install.py
-   
-   Windows:
-
-        python scripts\install.py
-
-   This will install Glados and download the needed AI models 
-3. To start GLaDOS, run:
-
-        uv run glados
-    If you want something more fancy, try the Text UI (TUI), with:
-
-        uv run glados tui
-
-## Speech Generation
-You can also get her to say something with:
-
-    uv run glados say "The cake is real"
+- [x] Sprachgenerator trainiert & integriert
+- [x] Persönlichkeitskern (LLM-Prompt)
+- [ ] Speicher-/Kontext-Management
+- [ ] Vision (VLM-Integration)
+- [ ] Hardware-Animation (Servos/Motoren)
+- [ ] 3D-Druck-Designs
 
 ## Changing the LLM Model
 
