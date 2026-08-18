@@ -165,4 +165,8 @@ cython_debug/
 *.gguf
 *.onnx
 
+# Config files with secrets
+configs/glados_config.yaml
+configs/assistant_config.yaml
+
 venv2/

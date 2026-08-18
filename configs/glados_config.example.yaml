@@ -1,0 +1,33 @@
+Glados:
+  # LLM Modell und Endpunkt
+  # Optionen:
+  #   - Lokal mit Ollama: completion_url: "http://localhost:11434/api/chat"
+  #   - DeepSeek API: completion_url: "https://api.deepseek.com/chat/completions"
+  #   - OpenAI API: completion_url: "https://api.openai.com/v1/chat/completions"
+  llm_model: "deepseek-chat"
+  completion_url: "https://api.deepseek.com/chat/completions"
+  api_key: null  # Setze deinen API-Key hier oder nutze Umgebungsvariable: DEEPSEEK_API_KEY
+  
+  interruptible: true  # Kann GLaDOS unterbrochen werden?
+  audio_io: "sounddevice"
+  
+  # ASR (Speech-to-Text) Konfiguration
+  # Optionen: "ctc", "tdt", "whisper"
+  asr_engine: "whisper"
+  asr_model_path: "small"  # Whisper: tiny, base, small, medium, large
+  asr_config_path: "models/ASR/de_v1_config.yaml"  # Wird bei Whisper ignoriert
+  
+  # Whisper-spezifische Einstellungen (optional)
+  whisper_device: "auto"  # "cpu", "cuda", "auto"
+  whisper_fast_mode: true  # true = schneller, false = qualitätsoptimiert
+  
+  # TTS Konfiguration
+  wake_word: null
+  voice: "glados"  # "glados" oder Kokoro-Stimme
+  announcement: "Alle Module sind geladen. GLaDOS ist bereit."
+  
+  # Persönlichkeitsprompt
+  personality_preprompt:
+    - system: "Du bist GLaDOS, eine sarkastische KI-Assistentin. Antworte kurz und knapp, max. 2 Sätze."
+    - user: "Hallo!"
+    - assistant: "Oh, wunderbar. Ein neuer Test-Subjekt betritt das Gelände."
